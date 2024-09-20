@@ -56,6 +56,13 @@ class AmplifyInterface implements ArcaneAuthInterface {
   }
 
   @override
+  Future<Result<void, String>> login<T>({
+    T? input,
+    Future<void> Function()? onLoggedIn,
+  }) =>
+      throw UnimplementedError();
+
+  @override
   Future<Result<void, String>> loginWithEmailAndPassword({
     required String email,
     required String password,
