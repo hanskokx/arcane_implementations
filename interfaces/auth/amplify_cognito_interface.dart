@@ -3,6 +3,8 @@ import "package:amplify_flutter/amplify_flutter.dart";
 import "package:arcane_framework/arcane_framework.dart";
 import "package:flutter/widgets.dart";
 
+typedef LoginInput = ({String email, String password});
+
 class AmplifyInterface implements ArcaneAuthInterface {
   AmplifyInterface._internal();
 
@@ -56,20 +58,19 @@ class AmplifyInterface implements ArcaneAuthInterface {
   }
 
   @override
-  Future<Result<void, String>> login<T>({
-    T? input,
+  Future<Result<void, String>> login<LoginInput>({
+    LoginInput? input,
     Future<void> Function()? onLoggedIn,
-  }) =>
-      throw UnimplementedError();
-
-  @override
-  Future<Result<void, String>> loginWithEmailAndPassword({
-    required String email,
-    required String password,
   }) async {
     final bool alreadyLoggedIn = await isSignedIn;
 
     if (alreadyLoggedIn) return Result.ok(null);
+    if (input == null) return Result.error("No input provided");
+
+    final credentials = input as ({String email, String password});
+
+    final String email = credentials.email;
+    final String password = credentials.password;
 
     try {
       final CognitoSignInResult result = await _cognito.signIn(
@@ -83,6 +84,13 @@ class AmplifyInterface implements ArcaneAuthInterface {
       return Result.error("Error signing in: $e");
     }
   }
+
+  @override
+  Future<Result<void, String>> loginWithEmailAndPassword({
+    required String email,
+    required String password,
+  }) async =>
+      throw UnimplementedError();
 
   Future<Result<void, String>> _handleSignInResult(
     SignInResult result,
