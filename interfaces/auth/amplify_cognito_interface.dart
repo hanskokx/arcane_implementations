@@ -1,11 +1,14 @@
 import "package:amplify_auth_cognito/amplify_auth_cognito.dart";
 import "package:amplify_flutter/amplify_flutter.dart";
 import "package:arcane_framework/arcane_framework.dart";
+import "package:arcane_helper_utils/arcane_helper_utils.dart";
 import "package:flutter/widgets.dart";
 
-typedef LoginInput = ({String email, String password});
+typedef Credentials = ({String email, String password});
 
-class AmplifyInterface implements ArcaneAuthInterface {
+class AmplifyInterface
+    with ArcaneAuthAccountRegistration, ArcaneAuthPasswordManagement
+    implements ArcaneAuthInterface {
   AmplifyInterface._internal();
 
   static bool _mocked = false;
@@ -13,13 +16,14 @@ class AmplifyInterface implements ArcaneAuthInterface {
   static final ArcaneAuthInterface _instance = AmplifyInterface._internal();
   static ArcaneAuthInterface get I => _instance;
 
-  AmplifyAuthCognito get _cognito =>
-      Amplify.Auth.getPlugin(AmplifyAuthCognito.pluginKey);
+  AmplifyAuthCognito get _cognito => Amplify.Auth.getPlugin(
+        AmplifyAuthCognito.pluginKey,
+      );
 
   Future<CognitoAuthSession?> get _session async {
     try {
       return await _cognito.fetchAuthSession();
-    } on AuthException catch (_) {
+    } on AuthException {
       return null;
     }
   }
@@ -85,13 +89,6 @@ class AmplifyInterface implements ArcaneAuthInterface {
     }
   }
 
-  @override
-  Future<Result<void, String>> loginWithEmailAndPassword({
-    required String email,
-    required String password,
-  }) async =>
-      throw UnimplementedError();
-
   Future<Result<void, String>> _handleSignInResult(
     SignInResult result,
     String email,
@@ -142,8 +139,11 @@ class AmplifyInterface implements ArcaneAuthInterface {
   }
 
   @override
-  Future<Result<String, String>> resendVerificationCode(String email) async {
+  Future<Result<String, String>> resendVerificationCode<T>({T? input}) async {
     try {
+      final String? email = input as String?;
+      if (email == null) return Result.error("No email address provided.");
+
       final result = await _cognito.resendSignUpCode(
         username: email.toLowerCase(),
       );
@@ -156,11 +156,19 @@ class AmplifyInterface implements ArcaneAuthInterface {
   }
 
   @override
-  Future<Result<SignUpStep, String>> signup({
-    required String password,
-    required String email,
+  Future<Result<SignUpStep, String>> register<Credentials>({
+    Credentials? input,
   }) async {
     try {
+      if (input == null) {
+        return Result.error("Unable to create an account with no credentials");
+      }
+
+      final credentials = input as ({String email, String password});
+
+      final String email = credentials.email;
+      final String password = credentials.password;
+
       final String accountEmail = email.toLowerCase();
       final userAttributes = {
         AuthUserAttributeKey.email: accountEmail,
@@ -185,13 +193,25 @@ class AmplifyInterface implements ArcaneAuthInterface {
 
   @override
   Future<Result<bool, String>> confirmSignup({
-    required String username,
-    required String confirmationCode,
+    String? username,
+    String? confirmationCode,
   }) async {
+    if (username.isNullOrEmpty) {
+      return Result.error(
+        "Unable to confirm account due to an empty username.",
+      );
+    }
+
+    if (confirmationCode.isNullOrEmpty) {
+      return Result.error(
+        "Unable to confirm account due to an empty confirmation code.",
+      );
+    }
+
     try {
       final CognitoSignUpResult result = await _cognito.confirmSignUp(
-        username: username.toLowerCase(),
-        confirmationCode: confirmationCode,
+        username: username!.toLowerCase(),
+        confirmationCode: confirmationCode!,
       );
 
       return Result.ok(result.isSignUpComplete);
@@ -202,15 +222,18 @@ class AmplifyInterface implements ArcaneAuthInterface {
 
   @override
   Future<Result<bool, String>> resetPassword({
-    required String email,
+    String? email,
     String? newPassword,
     String? code,
   }) async {
     try {
+      if (email.isNullOrEmpty) {
+        return Result.error("Email address is empty.");
+      }
       late ResetPasswordResult result;
       if (newPassword != null && code != null) {
         result = await _cognito.confirmResetPassword(
-          username: email,
+          username: email!,
           newPassword: newPassword,
           confirmationCode: code,
         );
@@ -218,7 +241,7 @@ class AmplifyInterface implements ArcaneAuthInterface {
 
       if (newPassword == null && code == null) {
         result = await _cognito.resetPassword(
-          username: email,
+          username: email!,
         );
       }
 
