@@ -15,6 +15,7 @@ class DebugPrint implements LoggingInterface {
     Map<String, dynamic>? metadata,
     Level? level = Level.debug,
     StackTrace? stackTrace,
+    Object? extra,
   }) {
     debugPrint("[${level!.name}] $message ($metadata)");
   }

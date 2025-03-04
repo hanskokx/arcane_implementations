@@ -4,6 +4,7 @@ import "dart:io" show Platform;
 import "package:arcane_framework/arcane_framework.dart";
 import "package:arcane_helper_utils/arcane_helper_utils.dart";
 import "package:flutter/foundation.dart";
+import "package:homevolt/config.dart";
 import "package:logger/logger.dart" as l;
 
 class DebugConsole implements LoggingInterface {
@@ -27,6 +28,7 @@ class DebugConsole implements LoggingInterface {
     Map<String, dynamic>? metadata,
     Level? level,
     StackTrace? stackTrace,
+    Object? extra,
   }) {
     if (Feature.logging.disabled) return;
     if (Feature.debugConsoleLogging.disabled) return;
@@ -37,8 +39,9 @@ class DebugConsole implements LoggingInterface {
 
     if ((level?.value ?? Level.debug.value) < cutoff.value) return;
 
-    final l.Level logLevel = l.Level.values
-        .firstWhere((value) => value.name == (level ?? Level.debug).name);
+    final l.Level logLevel = l.Level.values.firstWhere(
+      (value) => value.name == (level ?? Level.debug).name,
+    );
 
     final Map<String, dynamic> localMetadata = metadata ?? {};
 
@@ -53,13 +56,14 @@ class DebugConsole implements LoggingInterface {
       level: logLevel,
       printer: l.PrettyPrinter(
         methodCount: 2,
-        errorMethodCount: kDebugMode &&
-                !(level == Level.error ||
-                    level == Level.warning ||
-                    level == Level.trace ||
-                    level == Level.fatal)
-            ? 4
-            : 8,
+        errorMethodCount:
+            kDebugMode &&
+                    !(level == Level.error ||
+                        level == Level.warning ||
+                        level == Level.trace ||
+                        level == Level.fatal)
+                ? 4
+                : 8,
         stackTraceBeginIndex: 1,
         lineLength: 120,
         colors: !Platform.isIOS,
