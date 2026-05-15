@@ -1,5 +1,4 @@
 import "dart:convert";
-import "dart:io" show Platform;
 
 import "package:arcane_framework/arcane_framework.dart";
 import "package:arcane_helper_utils/arcane_helper_utils.dart";
@@ -66,7 +65,7 @@ class DebugConsole implements LoggingInterface {
                 : 8,
         stackTraceBeginIndex: 1,
         lineLength: 120,
-        colors: !Platform.isIOS,
+        colors: defaultTargetPlatform != TargetPlatform.iOS,
         printEmojis: kDebugMode,
         dateTimeFormat: l.DateTimeFormat.none,
       ),
